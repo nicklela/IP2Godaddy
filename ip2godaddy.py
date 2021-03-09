@@ -1,6 +1,7 @@
 import argparse
 import logging
 from config import Configuration
+from dnsProvider import GoDaddy
 
 """
 Debug log setting
@@ -27,14 +28,17 @@ def main():
     try:
         config.load()
     except Exception as e:
-        logging.error('Fail to load configuration from ' + config.file_path + ' due to {0}'.format(e))
+        logging.error('Fail to load configuration from ' + config.file + ' due to {0}'.format(e))
         raise RuntimeError('Fail to load configuration') from e
 
-    config.dump()
+    logging.debug('config {0}'.format(config.settings))
 
     """
-    Update DNS
+    Upate DNS
     """
+    logging.info('Update IP for domain: {0}'.format(config.domain))
+    dnsProvider = GoDaddy(config.domain)
+    dnsProvider.dump()
 
 if __name__ == "__main__":
 

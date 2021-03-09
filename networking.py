@@ -1,3 +1,3 @@
 
-class Networking:
+class HttpQuery:
     pass
