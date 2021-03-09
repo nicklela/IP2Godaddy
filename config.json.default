@@ -1,5 +1,7 @@
 {
-  "domain": "default",
-  "key": "",
-  "secret": ""
+  "domain": "your_domain",
+  "name": "@",
+  "key": "your_key",
+  "secret": "your_secret",
+  "interface": "eth0"
 }
