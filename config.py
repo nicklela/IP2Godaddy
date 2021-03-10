@@ -81,6 +81,13 @@ class Configuration:
         return self._settings['name']
 
     @property
+    def fulldomain(self):
+        if self.name == '@':
+            return self.domain
+        else:
+            return self.name + '.' + self.domain
+
+    @property
     def log(self):
         if 'log' not in self._settings or not self._settings['log']:
             return None
