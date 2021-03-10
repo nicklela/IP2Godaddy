@@ -1,5 +1,6 @@
 import argparse
 import logging
+import os
 from config import Configuration
 from dnsProvider import GoDaddy
 from networking import NetInterface
@@ -7,17 +8,13 @@ from networking import NetInterface
 """
 Debug log setting
 """
+LOG_FORMAT = '%(asctime)s %(levelname)s: %(message)s'
 def debug_enabled():
-    FORMAT = '%(asctime)s %(levelname)s: %(message)s'
-    logging.basicConfig(level=logging.DEBUG, format=FORMAT)
-
-def error_enabled():
-    FORMAT = '%(asctime)s %(levelname)s: %(message)s'
-    logging.basicConfig(level=logging.ERROR, format=FORMAT)
+    logging.basicConfig(level=logging.DEBUG, format=LOG_FORMAT)
 
 def info_enabled():
     FORMAT = '%(asctime)s %(levelname)s: %(message)s'
-    logging.basicConfig(level=logging.INFO, format=FORMAT)
+    logging.basicConfig(level=logging.INFO, format=LOG_FORMAT)
 
 """
 Main function
@@ -30,6 +27,8 @@ def main():
     parser.add_argument("-c", "--config", help="specify the config.json in other place", default=Configuration.DEFAULT_CONFIG)
     args = parser.parse_args()
 
+    logging.info(os.path.basename(__file__) + ' start')
+    
     """
     Get config
     """
@@ -43,9 +42,25 @@ def main():
     logging.debug('config {0}'.format(config.settings))
 
     """
+    Check to see if we need log file
+    """
+    if config.log is not None:
+        fileLog = logging.FileHandler(config.log)
+        logFormat = logging.Formatter(LOG_FORMAT)
+        fileLog.setFormatter(logFormat)
+        rootLog = logging.getLogger()
+        rootLog.addHandler(fileLog)
+        logging.debug('Log file: ' + config.log)
+
+    """
     Find interface IP address
     """
-    interface = NetInterface(config.interface)
+    try:
+        interface = NetInterface(config.interface)
+    except Exception as e:
+        logging.error('Fail to locate interface: ' + config.interface + ' due to {0}'.format(e))
+        raise RuntimeError('Fail to locate interface') from e
+        
     ipaddr = interface.ip
     logging.debug('IP address of ' + config.interface + ' is: ' + ipaddr)
 

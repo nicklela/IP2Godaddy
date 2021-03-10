@@ -112,7 +112,7 @@ class GoDaddy(Provider):
         else:
             data = '[{"data": "' + new_ip + '", "name":"' + self.name + '","ttl":3600,"type":"A"}]'
             logging.debug('content: ' + data)
-            super(GoDaddy, self).setRemoteIp(self._api + self.domain + '/records/A/@', self._header, data)
+            super(GoDaddy, self).setRemoteIp(self._api + self.domain + '/records/A/' + self.name, self._header, data)
 
     def dump(self):
         super(GoDaddy, self).dump()

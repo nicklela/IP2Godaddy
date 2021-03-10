@@ -3,5 +3,6 @@
   "name": "@",
   "key": "your_key",
   "secret": "your_secret",
-  "interface": "eth0"
+  "interface": "eth0",
+  "log": "ip2godaddy.log"
 }

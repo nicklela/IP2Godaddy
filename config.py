@@ -80,6 +80,12 @@ class Configuration:
     def name(self):
         return self._settings['name']
 
+    @property
+    def log(self):
+        if 'log' not in self._settings or not self._settings['log']:
+            return None
+        return self._settings['log']
+
     def dump(self):
         logging.info('Configuration file: ' + self._file_path)
         logging.info('Configuration: ' + json.dumps(self._settings))
