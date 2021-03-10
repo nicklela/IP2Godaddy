@@ -65,6 +65,13 @@ def main():
     logging.debug('IP address of ' + config.interface + ' is: ' + ipaddr)
 
     """
+    public ip check
+    """
+    public_ip = interface.public_ip
+    if public_ip is not None and ipaddr != public_ip:
+        logging.warn('interface ip: ' + ipaddr + ' is different from public ip: ' + public_ip + ', you may be behind NAT router')
+
+    """
     Upate DNS
     """
     logging.debug('Update ' + ipaddr + ' for domain: {0}'.format(config.domain))
