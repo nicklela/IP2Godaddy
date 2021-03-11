@@ -6,7 +6,7 @@ import json
 class HttpQuery:
 
     def __init__(self):
-        self._timeout = 2
+        self._timeout = 5
 
     def post(self, url, json_data):
         result = requests.post(url, json = json_data, timeout = self._timeout)
