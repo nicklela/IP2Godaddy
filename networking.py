@@ -9,17 +9,36 @@ class HttpQuery:
         self._timeout = 5
 
     def post(self, url, json_data):
-        result = requests.post(url, json = json_data, timeout = self._timeout)
+        try:
+            result = requests.post(url, json = json_data, timeout = self._timeout)
+        except Exception as e:
+            logging.exception('Exception while doing post')
+
         return result
 
     def get(self, url, header):
-        return requests.get(url, headers = header, timeout = self._timeout)
+        try:
+            result = requests.get(url, headers = header, timeout = self._timeout)
+        except Exception as e:
+            logging.exception('Exception while doing get')
+
+        return result
 
     def put(self, url, header, data):
-        return requests.put(url, headers = header, data = data, timeout = self._timeout)
+        try:
+            result = requests.put(url, headers = header, data = data, timeout = self._timeout)
+        except Exception as e:
+            logging.exception('Exception while doing put')
+
+        return result
 
     def patch(self, url, header, data):
-        return requests.patch(url, headers = header, data = data, timeout = self._timeout)
+        try:
+            result = requests.patch(url, headers = header, data = data, timeout = self._timeout)
+        except Exception as e:
+            logging.exception('Exception while doing patch')
+
+        return result
 
 class NetInterface:
 
