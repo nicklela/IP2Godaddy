@@ -42,7 +42,7 @@ class Provider:
 
     def isDomainExist(self, uri, header):
         data = self.query.get(uri, header)
-        if (data.status_code != requests.codes.ok):
+        if (data is None or data.status_code != requests.codes.ok):
             return False
         logging.debug('Recv: {0} {1}'.format(data.status_code, data.text))
         return True
@@ -53,10 +53,9 @@ class Provider:
             return self._remote_ip
 
         data = self.query.get(uri, header)
-        logging.debug('Recv: {0} {1}'.format(data.status_code, data.text))
-        if (data.status_code != requests.codes.ok):
+        if (data is None or data.status_code != requests.codes.ok):
             return None
-
+        logging.debug('Recv: {0} {1}'.format(data.status_code, data.text))
         record = json.loads(data.text)
 
         if len(record) == 0 or 'data' not in record[0]:
@@ -67,7 +66,7 @@ class Provider:
 
     def setRemoteIp(self, url, header, content):
         data = self.query.put(url, header, content)        
-        if (data.status_code != requests.codes.ok):
+        if (data is None or data.status_code != requests.codes.ok):
             return False
         logging.debug('Recv: {0} {1}'.format(data.status_code, data.text))
         """
@@ -78,9 +77,13 @@ class Provider:
 
     def addRemoteIp(self, url, header, content):
         data = self.query.patch(url, header, content)        
-        if (data.status_code != requests.codes.ok):
+        if (data is None or data.status_code != requests.codes.ok):
             return False
         logging.debug('Recv: {0} {1}'.format(data.status_code, data.text))
+        """
+        remote ip is updated
+        """
+        self._remote_ip = None
         return True
 
 

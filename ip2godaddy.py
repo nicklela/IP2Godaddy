@@ -16,6 +16,31 @@ def info_enabled():
     FORMAT = '%(asctime)s %(levelname)s: %(message)s'
     logging.basicConfig(level=logging.INFO, format=LOG_FORMAT)
 
+
+def updateDNS(ipaddr, config):
+    logging.debug('Update ' + ipaddr + ' for domain: {0}'.format(config.domain))
+    dnsProvider = GoDaddy(config.domain, config.name, ipaddr, config.key, config.secret)
+    if dnsProvider.isDomainExist():
+        remote_ip = dnsProvider.remote_ip
+        if remote_ip is None:
+            logging.error(config.fulldomain + ' does not exist, will reate one')
+            dnsProvider.remote_ip = ipaddr
+            if dnsProvider.remote_ip == ipaddr:
+                logging.info('[' + config.fulldomain + '] add ' + ipaddr + ' successfully')
+            else:
+                logging.error('[' + config.fulldomain + '] add ' + ipaddr + ' failed')
+        elif remote_ip == ipaddr:
+            logging.info('[' + config.fulldomain + '] remote ip is up to date: ' + ipaddr)
+        else:
+            logging.debug('[' + config.fulldomain + '] update from ' + remote_ip + ' to ' + ipaddr)
+            dnsProvider.remote_ip = ipaddr
+            if dnsProvider.remote_ip == ipaddr:
+                logging.info('[' + config.fulldomain + '] update from ' + remote_ip + ' to ' + ipaddr + ' successfully')
+            else:
+                logging.error('[' + config.fulldomain + '] update from ' + remote_ip + ' to ' + ipaddr + ' failed')
+    else:
+        logging.error(config.domain + ' does not exist')
+
 """
 Main function
 """
@@ -74,28 +99,11 @@ def main():
     """
     Upate DNS
     """
-    logging.debug('Update ' + ipaddr + ' for domain: {0}'.format(config.domain))
-    dnsProvider = GoDaddy(config.domain, config.name, ipaddr, config.key, config.secret)
-    if dnsProvider.isDomainExist():
-        remote_ip = dnsProvider.remote_ip
-        if remote_ip is None:
-            logging.error(config.fulldomain + ' does not exist, will reate one')
-            dnsProvider.remote_ip = ipaddr
-            if dnsProvider.remote_ip == ipaddr:
-                logging.info('[' + config.fulldomain + '] add ' + ipaddr + ' successfully')
-            else:
-                logging.error('[' + config.fulldomain + '] add ' + ipaddr + ' failed')
-        elif remote_ip == ipaddr:
-            logging.info('[' + config.fulldomain + '] remote ip is up to date: ' + ipaddr)
-        else:
-            logging.debug('[' + config.fulldomain + '] update from ' + remote_ip + ' to ' + ipaddr)
-            dnsProvider.remote_ip = ipaddr
-            if dnsProvider.remote_ip == ipaddr:
-                logging.info('[' + config.fulldomain + '] update from ' + remote_ip + ' to ' + ipaddr + ' successfully')
-            else:
-                logging.error('[' + config.fulldomain + '] update from ' + remote_ip + ' to ' + ipaddr + ' failed')
-    else:
-        logging.error(config.domain + ' does not exist')
+    try:
+        updateDNS(ipaddr, config)
+    except Exception as e:
+        logging.error('Failed to update ' + ipaddr + ' for ' + config.fulldomain + ' due to {0}'.format(e))
+        raise RuntimeError('Failed to update ' + ipaddr + ' for ' + config.fulldomain)  from e
 
 if __name__ == "__main__":
 

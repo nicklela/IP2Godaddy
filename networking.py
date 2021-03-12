@@ -2,43 +2,72 @@ import netifaces
 import logging
 import requests
 import json
+import time
+
+RETRY_COUNT=3
+TIMEOUT=5
+SLEEP=5
 
 class HttpQuery:
 
     def __init__(self):
-        self._timeout = 5
+        self._timeout = TIMEOUT
+        self._retry = RETRY_COUNT
+
+    def retry(sleep, retry = RETRY_COUNT):
+        def decorator(func):
+            def wrapper(*args, **kwargs):
+                retries = 0
+                while retries < retry:
+                    try:
+                        result = func(*args, **kwargs)
+                    except requests.exceptions.Timeout:
+                        retries += 1
+                        logging.error('timed out while access: ' + args[1] + ', retry {0}/{1} in {2} seconds...'.format(retries, retry, sleep))
+                        time.sleep(sleep)
+                    else:
+                        return result
+                return None
+            return wrapper
+        return decorator
+
 
     def post(self, url, json_data):
         try:
             result = requests.post(url, json = json_data, timeout = self._timeout)
+        except requests.exceptions.Timeout:
+            logging.error('Timed out while doing post: ' + url)
         except Exception as e:
             logging.exception('Exception while doing post')
+        else:
+            return result
+        return None
 
-        return result
-
+    @retry(SLEEP, RETRY_COUNT)
     def get(self, url, header):
-        try:
-            result = requests.get(url, headers = header, timeout = self._timeout)
-        except Exception as e:
-            logging.exception('Exception while doing get')
-
-        return result
+        return requests.get(url, headers = header, timeout = self._timeout)
 
     def put(self, url, header, data):
         try:
             result = requests.put(url, headers = header, data = data, timeout = self._timeout)
+        except requests.exceptions.Timeout:
+            logging.error('Timed out while doing put: ' + url)
         except Exception as e:
             logging.exception('Exception while doing put')
-
-        return result
+        else:
+            return result
+        return None
 
     def patch(self, url, header, data):
         try:
             result = requests.patch(url, headers = header, data = data, timeout = self._timeout)
+        except requests.exceptions.Timeout:
+            logging.error('Timed out while doing patch' + url)
         except Exception as e:
             logging.exception('Exception while doing patch')
-
-        return result
+        else:
+            return result
+        return None
 
 class NetInterface:
 
@@ -64,7 +93,7 @@ class NetInterface:
     @property
     def public_ip(self):
         data = self.query.get(self.public_ip_api, None)
-        if (data.status_code != requests.codes.ok):
+        if (data is None or data.status_code != requests.codes.ok):
             return None
         json_data = json.loads(data.text)
         if 'ip' not in json_data:
