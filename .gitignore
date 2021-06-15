@@ -130,3 +130,6 @@ dmypy.json
 
 # vim temp file
 *.swp
+
+# vscode
+launch.json

@@ -17,13 +17,16 @@ def info_enabled():
     logging.basicConfig(level=logging.INFO, format=LOG_FORMAT)
 
 
-def updateDNS(ipaddr, config):
+def updateDNS(ipaddr: str, ipaddrv6: str, config):
     logging.debug('Update ' + ipaddr + ' for domain: {0}'.format(config.domain))
-    dnsProvider = GoDaddy(config.domain, config.name, ipaddr, config.key, config.secret)
+    logging.debug('Update ' + ipaddrv6 + ' for domain: {0}'.format(config.domain))
+
+    dnsProvider = GoDaddy(config.domain, config.name, config.key, config.secret)
     if dnsProvider.isDomainExist():
+
         remote_ip = dnsProvider.remote_ip
         if remote_ip is None:
-            logging.error(config.fulldomain + ' does not exist, will reate one')
+            logging.error('Type A record for ' + config.fulldomain + ' does not exist, will reate one')
             dnsProvider.remote_ip = ipaddr
             if dnsProvider.remote_ip == ipaddr:
                 logging.info('[' + config.fulldomain + '] add ' + ipaddr + ' successfully')
@@ -38,6 +41,24 @@ def updateDNS(ipaddr, config):
                 logging.info('[' + config.fulldomain + '] update from ' + remote_ip + ' to ' + ipaddr + ' successfully')
             else:
                 logging.error('[' + config.fulldomain + '] update from ' + remote_ip + ' to ' + ipaddr + ' failed')
+
+        remote_ip = dnsProvider.remote_ipv6
+        if remote_ip is None:
+            logging.error('Type AAA record for ' + config.fulldomain + ' does not exist, will reate one')
+            dnsProvider.remote_ipv6 = ipaddrv6
+            if dnsProvider.remote_ipv6 == ipaddrv6:
+                logging.info('[' + config.fulldomain + '] add ' + ipaddrv6 + ' successfully')
+            else:
+                logging.error('[' + config.fulldomain + '] add ' + ipaddrv6 + ' failed')
+        elif remote_ip == ipaddrv6:
+            logging.info('[' + config.fulldomain + '] remote ipv6 is up to date: ' + ipaddrv6)
+        else:
+            logging.debug('[' + config.fulldomain + '] update from ' + remote_ip + ' to ' + ipaddrv6)
+            dnsProvider.remote_ipv6 = ipaddrv6
+            if dnsProvider.remote_ipv6 == ipaddrv6:
+                logging.info('[' + config.fulldomain + '] update from ' + remote_ip + ' to ' + ipaddrv6 + ' successfully')
+            else:
+                logging.error('[' + config.fulldomain + '] update from ' + remote_ip + ' to ' + ipaddrv6 + ' failed')                
     else:
         logging.error(config.domain + ' does not exist')
 
@@ -87,7 +108,9 @@ def main():
         raise RuntimeError('Fail to locate interface') from e
         
     ipaddr = interface.ip
+    ipaddrv6 = interface.ipv6
     logging.debug('IP address of ' + config.interface + ' is: ' + ipaddr)
+    logging.debug('IPv6 address of ' + config.interface + ' is: ' + ipaddrv6)
 
     """
     public ip check
@@ -100,7 +123,7 @@ def main():
     Upate DNS
     """
     try:
-        updateDNS(ipaddr, config)
+        updateDNS(ipaddr, ipaddrv6, config)
     except Exception as e:
         logging.error('Failed to update ' + ipaddr + ' for ' + config.fulldomain + ' due to {0}'.format(e))
         raise RuntimeError('Failed to update ' + ipaddr + ' for ' + config.fulldomain)  from e

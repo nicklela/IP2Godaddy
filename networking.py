@@ -91,6 +91,12 @@ class NetInterface:
         return ip_address
 
     @property
+    def ipv6(self):
+        ip_address = netifaces.ifaddresses(self.interface)[netifaces.AF_INET6][0]['addr']
+        logging.debug(self.interface + ' ipv6: {0}'.format(ip_address))
+        return ip_address
+
+    @property
     def public_ip(self):
         data = self.query.get(self.public_ip_api, None)
         if (data is None or data.status_code != requests.codes.ok):

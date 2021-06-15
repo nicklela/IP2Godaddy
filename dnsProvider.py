@@ -1,15 +1,24 @@
 import logging
 import requests
 import json
+import os
 from networking import HttpQuery
+from ipaddress import ip_address, IPv4Address
+  
+class IPType:
+
+    TYPE_IPV4 = 0
+    TYPE_IPV6 = 1
 
 class Provider:
 
     def __init__(self):
         self._domain = None
         self._ip = None
+        self._ipv6 = None
         self._name = None
         self._remote_ip = None
+        self._remote_ipv6 = None
         self.query = HttpQuery()
 
     @property
@@ -29,6 +38,14 @@ class Provider:
         self._ip = new_ip
 
     @property
+    def ipv6(self):
+        return self._ipv6
+
+    @ip.setter
+    def ipv6(self, new_ip):
+        self._ipv6 = new_ip
+
+    @property
     def name(self):
         return self._name
 
@@ -36,9 +53,8 @@ class Provider:
     def name(self, new_name):
         self._name = new_name
 
-    def dump(self):
-        logging.debug('domain: ' + self.domain)
-        logging.debug('ip: ' + self.ip)
+    def __str__(self) -> str:
+        return "domain: " + self.domain + " ip: " + self.ip + " ipv6: " + self.ipv6
 
     def isDomainExist(self, uri, header):
         data = self.query.get(uri, header)
@@ -47,10 +63,19 @@ class Provider:
         logging.debug('Recv: {0} {1}'.format(data.status_code, data.text))
         return True
 
-    def getRemoteIp(self, uri, header):
+    def getRemoteIp(self, uri, header, type = IPType.TYPE_IPV4):
 
-        if self._remote_ip is not None:
-            return self._remote_ip
+        if (type == IPType.TYPE_IPV4):
+            remote_ip = self._remote_ip
+        else:
+            remote_ip = self._remote_ipv6
+
+        if remote_ip is not None:
+            return remote_ip
+
+        """
+        Get remote ip from DNS provider
+        """
 
         data = self.query.get(uri, header)
         if (data is None or data.status_code != requests.codes.ok):
@@ -61,10 +86,15 @@ class Provider:
         if len(record) == 0 or 'data' not in record[0]:
             return None
 
-        self._remote_ip = record[0]['data']
-        return self._remote_ip
+        remote_ip = record[0]['data']
+        if (type == IPType.TYPE_IPV4):
+            self._remote_ip = remote_ip
+        else:
+            self._remote_ipv6 = remote_ip
 
-    def setRemoteIp(self, url, header, content):
+        return remote_ip
+
+    def setRemoteIp(self, url: str, header: str, content: str, type = IPType.TYPE_IPV4):
         data = self.query.put(url, header, content)        
         if (data is None or data.status_code != requests.codes.ok):
             return False
@@ -72,10 +102,14 @@ class Provider:
         """
         remote ip is updated
         """
-        self._remote_ip = None
+        if (type == IPType.TYPE_IPV4):
+            self._remote_ip = None
+        else:
+            self._remote_ipv6 = None
+
         return True
 
-    def addRemoteIp(self, url, header, content):
+    def addRemoteIp(self, url, header, content, type = IPType.TYPE_IPV4):
         data = self.query.patch(url, header, content)        
         if (data is None or data.status_code != requests.codes.ok):
             return False
@@ -83,17 +117,25 @@ class Provider:
         """
         remote ip is updated
         """
-        self._remote_ip = None
+        if (type == IPType.TYPE_IPV4):
+            self._remote_ip = None
+        else:
+            self._remote_ipv6 = None
+
         return True
 
+    def getIPAddressType(self, IP: str) -> int:
+        try:
+            return IPType.TYPE_IPV4 if type(ip_address(IP)) is IPv4Address else IPType.TYPE_IPV6
+        except ValueError:
+            return None
 
 class GoDaddy(Provider):
 
-    def __init__(self, domain, name, ip, key, secret):
+    def __init__(self, domain, name, key, secret):
         self._api = 'https://api.godaddy.com/v1/domains/'
         super(GoDaddy, self).__init__()
         self.domain = domain
-        self.ip = ip
         self.name = name
         self._key = key
         self._secret = secret
@@ -104,20 +146,39 @@ class GoDaddy(Provider):
         
     @property
     def remote_ip(self):
-        return super(GoDaddy, self).getRemoteIp(self._api + self.domain + '/records/A/' + self.name, self._header)
+        return super(GoDaddy, self).getRemoteIp(self._api + self.domain + '/records/A/' + self.name, self._header, IPType.TYPE_IPV4)
+
+    @property
+    def remote_ipv6(self):
+        return super(GoDaddy, self).getRemoteIp(self._api + self.domain + '/records/AAAA/' + self.name, self._header, IPType.TYPE_IPV6)
 
     @remote_ip.setter
     def remote_ip(self, new_ip):
+        if super(GoDaddy, self).getIPAddressType(new_ip) != IPType.TYPE_IPV4:
+            raise ValueError("IP " + new_ip + " is not IPv4 address")
+
         if self.remote_ip is None:
             data = '[{"data": "' + new_ip + '", "name":"' + self.name + '","ttl":3600,"type":"A"}]'
             logging.debug('content: ' + data)
-            super(GoDaddy, self).addRemoteIp(self._api + self.domain + '/records', self._header, data)
+            super(GoDaddy, self).addRemoteIp(self._api + self.domain + '/records', self._header, data, IPType.TYPE_IPV4)
         else:
             data = '[{"data": "' + new_ip + '", "name":"' + self.name + '","ttl":3600,"type":"A"}]'
             logging.debug('content: ' + data)
-            super(GoDaddy, self).setRemoteIp(self._api + self.domain + '/records/A/' + self.name, self._header, data)
+            super(GoDaddy, self).setRemoteIp(self._api + self.domain + '/records/A/' + self.name, self._header, data, IPType.TYPE_IPV4)
 
-    def dump(self):
-        super(GoDaddy, self).dump()
-        logging.debug('api: ' + self._api)
-        logging.debug('header: ' + self.header)
+    @remote_ipv6.setter
+    def remote_ipv6(self, new_ip):
+        if super(GoDaddy, self).getIPAddressType(new_ip) != IPType.TYPE_IPV6:
+            raise ValueError("IP " + new_ip + " is not IPv6 address")
+
+        if self.remote_ipv6 is None:
+            data = '[{"data": "' + new_ip + '", "name":"' + self.name + '","ttl":3600,"type":"AAAA"}]'
+            logging.debug('content: ' + data)
+            super(GoDaddy, self).addRemoteIp(self._api + self.domain + '/records', self._header, data, IPType.TYPE_IPV6)
+        else:
+            data = '[{"data": "' + new_ip + '", "name":"' + self.name + '","ttl":3600,"type":"AAAA"}]'
+            logging.debug('content: ' + data)
+            super(GoDaddy, self).setRemoteIp(self._api + self.domain + '/records/AAAA/' + self.name, self._header, data, IPType.TYPE_IPV6)
+
+    def __str__(self) -> str:
+        return "api: " + self._api + os.linesep + "header: " + self._header + os.linesep + super(GoDaddy, self).__str__()
