@@ -20,41 +20,41 @@ class Provider:
         self.query = HttpQuery()
 
     @property
-    def domain(self):
+    def domain(self) -> str:
         return self._domain
 
     @domain.setter
-    def domain(self, domain):
+    def domain(self, domain: str):
         self._domain = domain
 
     @property
-    def ip(self):
+    def ip(self) -> str:
         return self._ip
 
     @ip.setter
-    def ip(self, new_ip):
+    def ip(self, new_ip: str):
         self._ip = new_ip
 
     @property
-    def ipv6(self):
+    def ipv6(self) -> str:
         return self._ipv6
 
     @ip.setter
-    def ipv6(self, new_ip):
+    def ipv6(self, new_ip: str):
         self._ipv6 = new_ip
 
     @property
-    def name(self):
+    def name(self) -> str:
         return self._name
 
     @name.setter
-    def name(self, new_name):
+    def name(self, new_name: str):
         self._name = new_name
 
     def __str__(self) -> str:
         return "domain: " + self.domain + " ip: " + self.ip + " ipv6: " + self.ipv6
 
-    def isDomainExist(self, uri, header):
+    def isDomainExist(self, uri: str, header: str) -> bool:
         data = self.query.get(uri, header)
         if (data is None or data.status_code != requests.codes.ok):
             return False
@@ -142,19 +142,19 @@ class GoDaddy(Provider):
         self._secret = secret
         self._header = {'accept': 'application/json', 'Content-Type': 'application/json', 'Authorization': 'sso-key ' + self._key + ':' + self._secret}
 
-    def isDomainExist(self):
+    def isDomainExist(self) -> bool:
         return super(GoDaddy, self).isDomainExist(self._api + self.domain, self._header)
         
     @property
-    def ip(self):
+    def ip(self) -> str:
         return super(GoDaddy, self).getRemoteIp(self._api + self.domain + '/records/A/' + self.name, self._header, IPType.TYPE_IPV4)
 
     @property
-    def ipv6(self):
+    def ipv6(self) -> str:
         return super(GoDaddy, self).getRemoteIp(self._api + self.domain + '/records/AAAA/' + self.name, self._header, IPType.TYPE_IPV6)
 
     @ip.setter
-    def ip(self, new_ip):
+    def ip(self, new_ip: str):
         if super(GoDaddy, self).getIPAddressType(new_ip) != IPType.TYPE_IPV4:
             raise ValueError("IP " + new_ip + " is not IPv4 address")
 
@@ -168,7 +168,7 @@ class GoDaddy(Provider):
             super(GoDaddy, self).setRemoteIp(self._api + self.domain + '/records/A/' + self.name, self._header, data, IPType.TYPE_IPV4)
 
     @ipv6.setter
-    def ipv6(self, new_ip):
+    def ipv6(self, new_ip: str):
         if super(GoDaddy, self).getIPAddressType(new_ip) != IPType.TYPE_IPV6:
             raise ValueError("IP " + new_ip + " is not IPv6 address")
 

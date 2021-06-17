@@ -5,11 +5,11 @@ import os
 class Configuration:
     DEFAULT_CONFIG = "config.json.default"
 
-    def __init__(self, config = DEFAULT_CONFIG):
+    def __init__(self, config: str = DEFAULT_CONFIG):
         self._file_path = config
         self._settings = {}
 
-    def __isValid(self, setting):
+    def __isValid(self, setting: list) -> bool:
         if 'domain' not in setting or not setting['domain']:
             return False
             
@@ -30,7 +30,7 @@ class Configuration:
 
         return True        
 
-    def __load(self, path):
+    def __load(self, path: str):
         with open(path, 'r') as json_file:
             temp_settings = json.load(json_file)
 
@@ -47,11 +47,11 @@ class Configuration:
         return self._settings
 
     @property
-    def file(self):
+    def file(self) -> str:
         return self._file_path
 
     @file.setter
-    def file(self, new_file):
+    def file(self, new_file: str):
         if os.path.isfile(new_file):
             try:
                 self.__load(new_file)
@@ -64,40 +64,40 @@ class Configuration:
             raise FileNotFoundError('file: ' + new_file + ' is not found')
 
     @property
-    def domain(self):
+    def domain(self) -> str:
         return self._settings['domain']
 
     @property
-    def key(self):
+    def key(self) -> str:
         return self._settings['key']
 
     @property
-    def secret(self):
+    def secret(self) -> str:
         return self._settings['secret']
 
     @property
-    def interface(self):
+    def interface(self) -> str:
         return self._settings['interface']
 
     @property
-    def name(self):
+    def name(self) -> str:
         return self._settings['name']
 
     @property
-    def fulldomain(self):
+    def fulldomain(self) -> str:
         if self.name == '@':
             return self.domain
         else:
             return self.name + '.' + self.domain
 
     @property
-    def log(self):
+    def log(self) -> str:
         if 'log' not in self._settings or not self._settings['log']:
             return None
         return self._settings['log']
 
     @property
-    def ipv6(self):
+    def ipv6(self) -> str:
         if self._settings['ipv6'].upper() == 'TRUE':
             return True
         return False

@@ -14,7 +14,7 @@ class HttpQuery:
         self._timeout = TIMEOUT
         self._retry = RETRY_COUNT
 
-    def retry(sleep, retry = RETRY_COUNT):
+    def retry(sleep, retry: int = RETRY_COUNT):
         def decorator(func):
             def wrapper(*args, **kwargs):
                 retries = 0
@@ -32,7 +32,7 @@ class HttpQuery:
         return decorator
 
 
-    def post(self, url, json_data):
+    def post(self, url: str, json_data: str):
         try:
             result = requests.post(url, json = json_data, timeout = self._timeout)
         except requests.exceptions.Timeout:
@@ -44,10 +44,10 @@ class HttpQuery:
         return None
 
     @retry(SLEEP, RETRY_COUNT)
-    def get(self, url, header):
+    def get(self, url: str, header: str):
         return requests.get(url, headers = header, timeout = self._timeout)
 
-    def put(self, url, header, data):
+    def put(self, url: str, header: str, data):
         try:
             result = requests.put(url, headers = header, data = data, timeout = self._timeout)
         except requests.exceptions.Timeout:
@@ -58,7 +58,7 @@ class HttpQuery:
             return result
         return None
 
-    def patch(self, url, header, data):
+    def patch(self, url: str, header: str, data):
         try:
             result = requests.patch(url, headers = header, data = data, timeout = self._timeout)
         except requests.exceptions.Timeout:
@@ -71,12 +71,12 @@ class HttpQuery:
 
 class NetInterface:
 
-    def __init__(self, ifName = 'eth0'):
+    def __init__(self, ifName: str = 'eth0'):
         self.interface = ifName
         self.public_ip_api = 'https://ipinfo.io/json'
         self.query = HttpQuery()
 
-    def __isValidInterface(self, interface):
+    def __isValidInterface(self, interface: str) -> bool:
         interfaces = netifaces.interfaces()
         logging.debug('available interfaces: {0}'.format(interfaces))
         if interface not in netifaces.interfaces():
@@ -85,19 +85,19 @@ class NetInterface:
         return True
 
     @property
-    def ip(self):
+    def ip(self) -> str:
         ip_address = netifaces.ifaddresses(self.interface)[netifaces.AF_INET][0]['addr']
         logging.debug(self.interface + ' ip: {0}'.format(ip_address))
         return ip_address
 
     @property
-    def ipv6(self):
+    def ipv6(self) -> str:
         ip_address = netifaces.ifaddresses(self.interface)[netifaces.AF_INET6][0]['addr']
         logging.debug(self.interface + ' ipv6: {0}'.format(ip_address))
         return ip_address
 
     @property
-    def public_ip(self):
+    def public_ip(self) -> str:
         data = self.query.get(self.public_ip_api, None)
         if (data is None or data.status_code != requests.codes.ok):
             return None
@@ -108,11 +108,11 @@ class NetInterface:
         return json_data['ip']
 
     @property
-    def interface(self):
+    def interface(self) -> str:
         return self._interface
 
     @interface.setter
-    def interface(self, new_interface):
+    def interface(self, new_interface: str):
         #
         # verify interface
         #
