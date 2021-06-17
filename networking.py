@@ -92,7 +92,11 @@ class NetInterface:
 
     @property
     def ipv6(self) -> str:
-        ip_address = netifaces.ifaddresses(self.interface)[netifaces.AF_INET6][0]['addr']
+        try:
+            ip_address = netifaces.ifaddresses(self.interface)[netifaces.AF_INET6][0]['addr']
+        except KeyError as e:
+            return None
+            
         logging.debug(self.interface + ' ipv6: {0}'.format(ip_address))
         return ip_address
 
