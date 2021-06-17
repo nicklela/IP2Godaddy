@@ -133,7 +133,7 @@ def main():
     """
     public_ip = interface.public_ip
     if public_ip is not None and ipaddr != public_ip:
-        logging.warn('interface ip: ' + ipaddr + ' is different from public ip: ' + public_ip + ', you may be behind NAT router')
+        logging.warning('interface ip: ' + ipaddr + ' is different from public ip: ' + public_ip + ', you may be behind NAT router')
 
     """
     Upate DNS
