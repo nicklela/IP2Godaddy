@@ -2,7 +2,7 @@ import argparse
 import logging
 import os
 from config import Configuration
-from dnsProvider import GoDaddy
+from dnsProvider import GoDaddy, IPType
 from networking import NetInterface
 
 """
@@ -13,22 +13,33 @@ def debug_enabled():
     logging.basicConfig(level=logging.DEBUG, format=LOG_FORMAT)
 
 def info_enabled():
-    FORMAT = '%(asctime)s %(levelname)s: %(message)s'
     logging.basicConfig(level=logging.INFO, format=LOG_FORMAT)
 
+def updateIP(provider: GoDaddy, ipaddr: str, type = IPType.TYPE_IPV4) -> bool:
 
-def updateDNS(ipaddr: str, ipaddrv6: str, config):
+    if type == IPType.TYPE_IPV4:
+        provider.ip = ipaddr
+        if provider.ip == ipaddr:
+            return True
+    else:
+        provider.ipv6 = ipaddr
+        if provider.ipv6 == ipaddr:
+            return True
+
+    return False
+
+def updateDNS(ipaddr: str, ipaddrv6: str, config: Configuration):
     logging.debug('Update ' + ipaddr + ' for domain: {0}'.format(config.domain))
-    logging.debug('Update ' + ipaddrv6 + ' for domain: {0}'.format(config.domain))
+    if ipaddrv6 != None:
+        logging.debug('Update ' + ipaddrv6 + ' for domain: {0}'.format(config.domain))
 
     dnsProvider = GoDaddy(config.domain, config.name, config.key, config.secret)
     if dnsProvider.isDomainExist():
 
-        remote_ip = dnsProvider.remote_ip
+        remote_ip = dnsProvider.ip
         if remote_ip is None:
             logging.error('Type A record for ' + config.fulldomain + ' does not exist, will reate one')
-            dnsProvider.remote_ip = ipaddr
-            if dnsProvider.remote_ip == ipaddr:
+            if updateIP(dnsProvider, ipaddr, IPType.TYPE_IPV4) == True:
                 logging.info('[' + config.fulldomain + '] add ' + ipaddr + ' successfully')
             else:
                 logging.error('[' + config.fulldomain + '] add ' + ipaddr + ' failed')
@@ -36,17 +47,18 @@ def updateDNS(ipaddr: str, ipaddrv6: str, config):
             logging.info('[' + config.fulldomain + '] remote ip is up to date: ' + ipaddr)
         else:
             logging.debug('[' + config.fulldomain + '] update from ' + remote_ip + ' to ' + ipaddr)
-            dnsProvider.remote_ip = ipaddr
-            if dnsProvider.remote_ip == ipaddr:
+            if updateIP(dnsProvider, ipaddr, IPType.TYPE_IPV4) == True:
                 logging.info('[' + config.fulldomain + '] update from ' + remote_ip + ' to ' + ipaddr + ' successfully')
             else:
                 logging.error('[' + config.fulldomain + '] update from ' + remote_ip + ' to ' + ipaddr + ' failed')
 
-        remote_ip = dnsProvider.remote_ipv6
+        if ipaddrv6 == None:
+            return
+
+        remote_ip = dnsProvider.ipv6
         if remote_ip is None:
             logging.error('Type AAA record for ' + config.fulldomain + ' does not exist, will reate one')
-            dnsProvider.remote_ipv6 = ipaddrv6
-            if dnsProvider.remote_ipv6 == ipaddrv6:
+            if updateIP(dnsProvider, ipaddrv6, IPType.TYPE_IPV6) == True:
                 logging.info('[' + config.fulldomain + '] add ' + ipaddrv6 + ' successfully')
             else:
                 logging.error('[' + config.fulldomain + '] add ' + ipaddrv6 + ' failed')
@@ -54,8 +66,7 @@ def updateDNS(ipaddr: str, ipaddrv6: str, config):
             logging.info('[' + config.fulldomain + '] remote ipv6 is up to date: ' + ipaddrv6)
         else:
             logging.debug('[' + config.fulldomain + '] update from ' + remote_ip + ' to ' + ipaddrv6)
-            dnsProvider.remote_ipv6 = ipaddrv6
-            if dnsProvider.remote_ipv6 == ipaddrv6:
+            if updateIP(dnsProvider, ipaddrv6, IPType.TYPE_IPV6) == True:
                 logging.info('[' + config.fulldomain + '] update from ' + remote_ip + ' to ' + ipaddrv6 + ' successfully')
             else:
                 logging.error('[' + config.fulldomain + '] update from ' + remote_ip + ' to ' + ipaddrv6 + ' failed')                
@@ -108,9 +119,14 @@ def main():
         raise RuntimeError('Fail to locate interface') from e
         
     ipaddr = interface.ip
-    ipaddrv6 = interface.ipv6
+    if config.ipv6 == True:
+        ipaddrv6 = interface.ipv6
+    else:
+        ipaddrv6 = None
+
     logging.debug('IP address of ' + config.interface + ' is: ' + ipaddr)
-    logging.debug('IPv6 address of ' + config.interface + ' is: ' + ipaddrv6)
+    if ipaddrv6 != None:
+        logging.debug('IPv6 address of ' + config.interface + ' is: ' + ipaddrv6)
 
     """
     public ip check

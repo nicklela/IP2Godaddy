@@ -25,6 +25,9 @@ class Configuration:
         if 'name' not in setting or not setting['name']:
             return False
 
+        if 'ipv6' not in setting or not setting['ipv6']:
+            return False
+
         return True        
 
     def __load(self, path):
@@ -92,6 +95,12 @@ class Configuration:
         if 'log' not in self._settings or not self._settings['log']:
             return None
         return self._settings['log']
+
+    @property
+    def ipv6(self):
+        if self._settings['ipv6'].upper() == 'TRUE':
+            return True
+        return False
 
     def dump(self):
         logging.info('Configuration file: ' + self._file_path)
