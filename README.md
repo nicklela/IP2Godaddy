@@ -11,6 +11,7 @@ The tool to report your local IP address to Godaddy
   "key": "your_key",
   "secret": "your_secret",
   "interface": "eth0",
+  "ipv6": "true",
   "log": "ip2godaddy.log"
   }
   ```
