@@ -3,6 +3,7 @@ import logging
 import requests
 import json
 import time
+import os
 
 RETRY_COUNT=3
 TIMEOUT=5
@@ -13,6 +14,14 @@ class HttpQuery:
     def __init__(self):
         self._timeout = TIMEOUT
         self._retry = RETRY_COUNT
+
+        http_proxy = os.getenv('http_proxy')
+        https_proxy = os.getenv('https_proxy')
+        if http_proxy is None and https_proxy is None:
+            self._proxies = None
+            logging.debug('No proxy settings found')
+        else:
+            self._proxies = { "http": http_proxy, "https": https_proxy }
 
     def retry(sleep, retry: int = RETRY_COUNT):
         def decorator(func):
@@ -34,7 +43,7 @@ class HttpQuery:
 
     def post(self, url: str, json_data: str):
         try:
-            result = requests.post(url, json = json_data, timeout = self._timeout)
+            result = requests.post(url, json = json_data, timeout = self._timeout, proxies = self._proxies)
         except requests.exceptions.Timeout:
             logging.error('Timed out while doing post: ' + url)
         except Exception as e:
@@ -45,11 +54,11 @@ class HttpQuery:
 
     @retry(SLEEP, RETRY_COUNT)
     def get(self, url: str, header: str):
-        return requests.get(url, headers = header, timeout = self._timeout)
+        return requests.get(url, headers = header, timeout = self._timeout, proxies = self._proxies)
 
     def put(self, url: str, header: str, data):
         try:
-            result = requests.put(url, headers = header, data = data, timeout = self._timeout)
+            result = requests.put(url, headers = header, data = data, timeout = self._timeout, proxies = self._proxies)
         except requests.exceptions.Timeout:
             logging.error('Timed out while doing put: ' + url)
         except Exception as e:
@@ -60,7 +69,7 @@ class HttpQuery:
 
     def patch(self, url: str, header: str, data):
         try:
-            result = requests.patch(url, headers = header, data = data, timeout = self._timeout)
+            result = requests.patch(url, headers = header, data = data, timeout = self._timeout, proxies = self._proxies)
         except requests.exceptions.Timeout:
             logging.error('Timed out while doing patch' + url)
         except Exception as e:
