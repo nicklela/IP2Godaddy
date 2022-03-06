@@ -1,9 +1,13 @@
 import argparse
 import logging
+import time
 import os
 from config import Configuration
 from dnsProvider import GoDaddy, IPType
 from networking import NetInterface
+
+INTERFACE_RETRY=3
+INTERFACE_WAIT=5
 
 """
 Debug log setting
@@ -112,11 +116,18 @@ def main():
     """
     Find interface IP address
     """
-    try:
-        interface = NetInterface(config.interface)
-    except Exception as e:
-        logging.error('Fail to locate interface: ' + config.interface + ' due to {0}'.format(e))
-        raise RuntimeError('Fail to locate interface') from e
+    retries = 0
+    while True:
+        try:
+            interface = NetInterface(config.interface)
+            break
+        except Exception as e:
+            logging.error('Fail to locate interface: ' + config.interface + ' due to {0}, retry {1}/{2} in {3} seconds...'.format(e, (retries + 1), INTERFACE_RETRY, INTERFACE_WAIT))
+            if retries < INTERFACE_RETRY:
+                retries += 1
+                time.sleep(INTRFACE_WAIT)
+            else:
+                raise RuntimeError('Fail to locate interface') from e
         
     ipaddr = interface.ip
     if config.ipv6 == True:
