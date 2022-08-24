@@ -73,7 +73,7 @@ def updateDNS(ipaddr: str, ipaddrv6: str, config: Configuration):
             if updateIP(dnsProvider, ipaddrv6, IPType.TYPE_IPV6) == True:
                 logging.info('[' + config.fulldomain + '] update from ' + remote_ip + ' to ' + ipaddrv6 + ' successfully')
             else:
-                logging.error('[' + config.fulldomain + '] update from ' + remote_ip + ' to ' + ipaddrv6 + ' failed')                
+                logging.error('[' + config.fulldomain + '] update from ' + remote_ip + ' to ' + ipaddrv6 + ' failed')
     else:
         logging.error(config.domain + ' does not exist')
 
@@ -89,7 +89,7 @@ def main():
     args = parser.parse_args()
 
     logging.info(os.path.basename(__file__) + ' start')
-    
+
     """
     Get config
     """
@@ -125,10 +125,10 @@ def main():
             logging.error('Fail to locate interface: ' + config.interface + ' due to {0}, retry {1}/{2} in {3} seconds...'.format(e, (retries + 1), INTERFACE_RETRY, INTERFACE_WAIT))
             if retries < INTERFACE_RETRY:
                 retries += 1
-                time.sleep(INTRFACE_WAIT)
+                time.sleep(INTERFACE_WAIT)
             else:
                 raise RuntimeError('Fail to locate interface') from e
-        
+
     ipaddr = interface.ip
     if config.ipv6 == True:
         ipaddrv6 = interface.ipv6
