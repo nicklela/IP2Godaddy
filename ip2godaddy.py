@@ -161,7 +161,7 @@ def main():
 
 if __name__ == "__main__":
 
-    debug_enabled()
-    #info_enabled()
+    #debug_enabled()
+    info_enabled()
     main()
 
