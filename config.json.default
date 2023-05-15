@@ -1,4 +1,5 @@
 {
+  "provider": "godaddy",
   "domain": "your_domain",
   "name": "@",
   "key": "your_key",

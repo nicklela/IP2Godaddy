@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+from dnsProvider import ProviderType
 
 class Configuration:
     DEFAULT_CONFIG = "config.json.default"
@@ -12,7 +13,7 @@ class Configuration:
     def __isValid(self, setting: list) -> bool:
         if 'domain' not in setting or not setting['domain']:
             return False
-            
+
         if 'key' not in setting or not setting['key']:
             return False
 
@@ -28,7 +29,10 @@ class Configuration:
         if 'ipv6' not in setting or not setting['ipv6']:
             return False
 
-        return True        
+        if 'provider' not in setting or not setting['provider']:
+            return False
+
+        return True
 
     def __load(self, path: str):
         with open(path, 'r') as json_file:
@@ -59,7 +63,7 @@ class Configuration:
                 raise Exception from e
 
             self._file_path = new_file
-            logging.info('configuraiton is updated from {0}'.format(self._file_path))
+            logging.info('configuration is updated from {0}'.format(self._file_path))
         else:
             raise FileNotFoundError('file: ' + new_file + ' is not found')
 
@@ -97,10 +101,16 @@ class Configuration:
         return self._settings['log']
 
     @property
-    def ipv6(self) -> str:
+    def ipv6(self) -> bool:
         if self._settings['ipv6'].upper() == 'TRUE':
             return True
         return False
+
+    @property
+    def provider(self) -> ProviderType:
+        if self._settings['provider'].upper() == 'GODADDY':
+            return ProviderType.PROVIDER_GODADDY
+        return ProviderType.PROVIDER_GOOGLE
 
     def dump(self):
         logging.info('Configuration file: ' + self._file_path)

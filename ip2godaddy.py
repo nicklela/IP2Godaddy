@@ -3,7 +3,7 @@ import logging
 import time
 import os
 from config import Configuration
-from dnsProvider import GoDaddy, IPType
+from dnsProvider import GoDaddy, Google, IPType, ProviderType
 from networking import NetInterface
 
 INTERFACE_RETRY=3
@@ -37,7 +37,11 @@ def updateDNS(ipaddr: str, ipaddrv6: str, config: Configuration):
     if ipaddrv6 != None:
         logging.debug('Update ' + ipaddrv6 + ' for domain: {0}'.format(config.domain))
 
-    dnsProvider = GoDaddy(config.domain, config.name, config.key, config.secret)
+    if config.provider == ProviderType.PROVIDER_GODADDY:
+        dnsProvider = GoDaddy(config.domain, config.name, config.key, config.secret)
+    else:
+        dnsProvider = Google(config.domain, config.name, config.key, config.secret)
+
     if dnsProvider.isDomainExist():
 
         remote_ip = dnsProvider.ip
@@ -157,7 +161,7 @@ def main():
 
 if __name__ == "__main__":
 
-    #debug_enabled()
-    info_enabled()
+    debug_enabled()
+    #info_enabled()
     main()
 

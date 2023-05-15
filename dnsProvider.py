@@ -2,13 +2,19 @@ import logging
 import requests
 import json
 import os
+from requests.auth import HTTPBasicAuth
 from networking import HttpQuery
 from ipaddress import ip_address, IPv4Address
-  
+
 class IPType:
 
     TYPE_IPV4 = 0
     TYPE_IPV6 = 1
+
+class ProviderType:
+
+    PROVIDER_GODADDY = 0
+    PROVIDER_GOOGLE  = 1
 
 class Provider:
 
@@ -92,8 +98,25 @@ class Provider:
 
         return ip
 
+    def updateRemoteIp(self, url: str, header: str, type = IPType.TYPE_IPV4):
+        data = self.query.get(url, header)
+        if (data is None or data.status_code != requests.codes.ok):
+            return None
+
+        logging.debug('Recv: {0} {1}'.format(data.status_code, data.text))
+        """
+        remote ip is updated
+        """
+
+        if (type == IPType.TYPE_IPV4):
+            self._ip = None
+        else:
+            self._ipv6 = None
+
+        return data
+
     def setRemoteIp(self, url: str, header: str, content: str, type = IPType.TYPE_IPV4) -> bool:
-        data = self.query.put(url, header, content)        
+        data = self.query.put(url, header, content)
         if (data is None or data.status_code != requests.codes.ok):
             return False
 
@@ -110,7 +133,7 @@ class Provider:
         return True
 
     def addRemoteIp(self, url: str, header: str, content: str, type = IPType.TYPE_IPV4) -> bool:
-        data = self.query.patch(url, header, content)        
+        data = self.query.patch(url, header, content)
         if (data is None or data.status_code != requests.codes.ok):
             return False
 
@@ -144,7 +167,7 @@ class GoDaddy(Provider):
 
     def isDomainExist(self) -> bool:
         return super(GoDaddy, self).isDomainExist(self._api + self.domain, self._header)
-        
+
     @property
     def ip(self) -> str:
         return super(GoDaddy, self).getRemoteIp(self._api + self.domain + '/records/A/' + self.name, self._header, IPType.TYPE_IPV4)
@@ -183,3 +206,74 @@ class GoDaddy(Provider):
 
     def __str__(self) -> str:
         return "api: " + self._api + os.linesep + "header: " + self._header + os.linesep + super(GoDaddy, self).__str__()
+
+
+class Google(Provider):
+
+    def __init__(self, domain: str, name: str, key: str, secret: str):
+        self._api = 'https://domains.google.com/nic/update?hostname='
+        super(Google, self).__init__()
+        self.domain = domain
+        self.name = name
+        self._key = key
+        self._secret = secret
+        self._ip = '0.0.0.0'
+        self._ipv6 = '0:0:0:0:0:0:0:0'
+        self._base64 = HTTPBasicAuth(self._key, self._secret)
+        self._header = {'Authorization': 'Basic ' + str(self._base64)}
+
+    def isDomainExist(self) -> bool:
+        return True
+
+    def __check_response(self, response: str) -> bool:
+        if not response:
+            return False
+        elif response.startswith('good'):
+            return True
+        elif response.startswith('nochg'):
+            return True
+        elif response == 'nohost':
+            return False
+        elif response == 'badauth':
+            return False
+        elif response == 'notfqdn':
+            return False
+        elif response == 'badagent':
+            return False
+        elif response == 'abuse':
+            return False
+        elif response == '911':
+            return False
+        elif response.startswith('conflict'):
+            return False
+
+        return False
+
+    @property
+    def ip(self) -> str:
+        return self._ip
+
+    @property
+    def ipv6(self) -> str:
+        return self._ipv6
+
+    @ip.setter
+    def ip(self, new_ip: str):
+        if super(Google, self).getIPAddressType(new_ip) != IPType.TYPE_IPV4:
+            raise ValueError("IP " + new_ip + " is not IPv4 address")
+
+        response = super(Google, self).updateRemoteIp(self._api + self.name + '.' + self.domain + '&myip=' + new_ip, self._header, IPType.TYPE_IPV4)
+        if self.__check_response(response.text):
+            self._ip = new_ip
+
+    @ipv6.setter
+    def ipv6(self, new_ip: str):
+        if super(Google, self).getIPAddressType(new_ip) != IPType.TYPE_IPV6:
+            raise ValueError("IP " + new_ip + " is not IPv6 address")
+
+        response = super(Google, self).updateRemoteIp(self._api + self.name + '.' + self.domain + '&myip=' + new_ip, self._header, IPType.TYPE_IPV6)
+        if self.__check_response(response.text):
+            self._ipv6 = new_ip
+
+    def __str__(self) -> str:
+        return "api: " + self._api + os.linesep + "header: " + self._header + os.linesep + super(Google, self).__str__()
