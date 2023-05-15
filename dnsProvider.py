@@ -2,7 +2,7 @@ import logging
 import requests
 import json
 import os
-from requests.auth import HTTPBasicAuth
+from base64 import b64encode
 from networking import HttpQuery
 from ipaddress import ip_address, IPv4Address
 
@@ -219,8 +219,8 @@ class Google(Provider):
         self._secret = secret
         self._ip = '0.0.0.0'
         self._ipv6 = '0:0:0:0:0:0:0:0'
-        self._base64 = HTTPBasicAuth(self._key, self._secret)
-        self._header = {'Authorization': 'Basic ' + str(self._base64)}
+        self._base64 = b64encode(f"{key}:{secret}".encode('utf-8')).decode("ascii")
+        self._header = {'Authorization': f'Basic {self._base64}'}
 
     def isDomainExist(self) -> bool:
         return True
