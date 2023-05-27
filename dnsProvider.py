@@ -2,6 +2,7 @@ import logging
 import requests
 import json
 import os
+import socket
 from base64 import b64encode
 from networking import HttpQuery
 from ipaddress import ip_address, IPv4Address
@@ -215,10 +216,11 @@ class Google(Provider):
         super(Google, self).__init__()
         self.domain = domain
         self.name = name
+        self.fullname = self.name + '.' + self.domain
         self._key = key
         self._secret = secret
-        self._ip = '0.0.0.0'
-        self._ipv6 = '0:0:0:0:0:0:0:0'
+        self._ip = None
+        self._ipv6 = None
         self._base64 = b64encode(f"{key}:{secret}".encode('utf-8')).decode("ascii")
         self._header = {'Authorization': f'Basic {self._base64}'}
 
@@ -251,10 +253,22 @@ class Google(Provider):
 
     @property
     def ip(self) -> str:
+        if self._ip is None:
+            try:
+                self._ip = socket.gethostbyname(self.fullname)
+            except socket.gaierror as e:
+                self._ip = '0.0.0.0'
+                raise ValueError("Invalid hostname: " + self.fullname)
         return self._ip
 
     @property
     def ipv6(self) -> str:
+        if self._ipv6 is None:
+            try:
+                self._ipv6 = socket.getaddrinfo(self.fullname, None, socket.AF_INET6)
+            except socket.gaierror as e:
+                self._ipv6 = '0:0:0:0:0:0:0:0'
+                raise ValueError("Invalid hostname: " + self.fullname)
         return self._ipv6
 
     @ip.setter
@@ -262,7 +276,7 @@ class Google(Provider):
         if super(Google, self).getIPAddressType(new_ip) != IPType.TYPE_IPV4:
             raise ValueError("IP " + new_ip + " is not IPv4 address")
 
-        response = super(Google, self).updateRemoteIp(self._api + self.name + '.' + self.domain + '&myip=' + new_ip, self._header, IPType.TYPE_IPV4)
+        response = super(Google, self).updateRemoteIp(self._api + self.fullname + '&myip=' + new_ip, self._header, IPType.TYPE_IPV4)
         if self.__check_response(response.text):
             self._ip = new_ip
 
@@ -271,7 +285,7 @@ class Google(Provider):
         if super(Google, self).getIPAddressType(new_ip) != IPType.TYPE_IPV6:
             raise ValueError("IP " + new_ip + " is not IPv6 address")
 
-        response = super(Google, self).updateRemoteIp(self._api + self.name + '.' + self.domain + '&myip=' + new_ip, self._header, IPType.TYPE_IPV6)
+        response = super(Google, self).updateRemoteIp(self._api + self.fullname + '&myip=' + new_ip, self._header, IPType.TYPE_IPV6)
         if self.__check_response(response.text):
             self._ipv6 = new_ip
 
