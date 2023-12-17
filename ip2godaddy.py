@@ -6,7 +6,7 @@ from config import Configuration
 from dnsProvider import GoDaddy, Google, IPType, ProviderType
 from networking import NetInterface
 
-INTERFACE_RETRY=3
+INTERFACE_RETRY=5
 INTERFACE_WAIT=5
 
 """
